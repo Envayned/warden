@@ -1,0 +1,6 @@
+name: warden
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: iam infra code
