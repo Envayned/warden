@@ -2,9 +2,10 @@ import pulumi_aws as aws
 import os
 
 from dotenv import load_dotenv
-from pulumi import Config, Output
+from pulumi import Config, Output, ResourceOptions
 from typing import Union
 from pulumi_aws.identitystore import User, Group
+from pulumi_aws.ssoadmin import AccountAssignment
 
 config = Config()
 users_config = config.require_object('users')
@@ -104,14 +105,18 @@ def create_identity_store_group_membership(group: str, user: str):
 
 def create_permission_set(permission_set_name: str, 
                           session_duration: str = "PT1H" , 
-                          relay_state: str | None = None):
+                          relay_state: str | None = None,
+                          description: str | None = None):
     """
     Create a permission set with the given name, session duration, and relay state.
     """
     return aws.ssoadmin.PermissionSet(permission_set_name,
         instance_arn=get_sso_instance_arn(),
         session_duration=session_duration,
-        relay_state=relay_state)
+        relay_state=relay_state,
+        description=description
+        )
+
 
 
 def create_account_assignment(name: str, permission_set_arn: str, principal: Union[User, Group]):
@@ -137,6 +142,16 @@ def create_account_assignment(name: str, permission_set_arn: str, principal: Uni
         target_type="AWS_ACCOUNT"
     )
 
+def create_policy_attachment(name: str, permission_set_arn: str, managed_policy_arn: str, account_assignment: AccountAssignment):
+    """
+    Create a policy attachment with the given name, permission set, and policy_arn.
+    """
+    return aws.ssoadmin.ManagedPolicyAttachment(name,
+        instance_arn=get_sso_instance_arn(),
+        permission_set_arn=permission_set_arn,
+        managed_policy_arn=managed_policy_arn,
+        opts=ResourceOptions(depends_on=[account_assignment])
+    )
 
 
 

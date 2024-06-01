@@ -4,9 +4,61 @@ import json
 
 from pulumi import Config, Output, ResourceOptions, export
 import pulumi_aws as aws
+from iam import * # yikes, fix later
 
-# declare a const for the account id 
-AWS_ACCOUNT_ID = "252705693666"
+def setup_sso_infrastructure():
+    # initialize pulumi config 
+    config = Config("warden")
+    users_config = config.require_object('users')
+
+    # dictionaries for resources
+
+    users = {}
+    groups = {}
+    account_assignments = {}
+
+    # create users and groups based on config
+
+    for user_name, user_data in users_config.items():
+        user_name = user_data['name']
+        user = create_identity_store_user(user_name)
+        users[user_name] = user
+
+        if 'group' in user_data:
+            group_name = user_data['group']
+            if group_name not in groups:
+                new_group = create_identity_store_group(group_name)
+                groups[group_name] = new_group
+
+            create_identity_store_group_membership(groups[group_name], user)
+
+    # create account assignments for users
+
+    for user_key, user_data in users_config.items():
+        user_name = user_data['name']
+        user = users[user_name]
+        policies = user_data["policies"]
+        description = user_data["description"]
+
+        permission_set_name = f"{user_name}-permission-set"
+        permission_set = create_permission_set(permission_set_name, description)
+
+        account_assignment_name = f"{user_name}-account-assignment"
+        account_assignment = create_account_assignment(account_assignment_name, permission_set.arn, user)
+
+        account_assignments[user_name] = account_assignment
+
+        for policy_arn in policies:
+            policy_attachment_name = f"{user_name}_PolicyAttachment_{policy_arn.split('/')[-1]}"
+            create_policy_attachment(policy_attachment_name, permission_set, policy_arn, account_assignment)
+
+if __name__ == "__main__":
+    setup_sso_infrastructure()
+
+        
+
+
+
 
 def assume_role_policy_for_principal(principal):
     """
@@ -26,8 +78,6 @@ def assume_role_policy_for_principal(principal):
     })
 
 config = Config()
-users_config = config.require_object('users')
-
 
 
 
@@ -146,7 +196,7 @@ account_assignment = aws.ssoadmin.AccountAssignment("account_assignment",
     permission_set_arn=dev_permission_set.arn,
     principal_id=dev_group.group_id,
     principal_type="GROUP",
-    target_id=AWS_ACCOUNT_ID,
+    target_id=get_aws_account_id(),
     target_type="AWS_ACCOUNT")
 
 # attach the policy to the account assignmnent 
