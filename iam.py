@@ -1,9 +1,14 @@
 import pulumi_aws as aws
+import os
 
+from dotenv import load_dotenv
 from pulumi import Config, Output
+
+
 
 config = Config()
 users_config = config.require_object('users')
+load_dotenv()
 
 ## getters rq
 
@@ -12,6 +17,9 @@ def get_sso_instance_arn():
 
 def get_sso_identity_store_id():
     return aws.ssoadmin.get_instances().identity_store_ids[0]
+
+def get_aws_account_id():
+    return os.getenv('AWS_ACCOUNT_ID')
 
 def assume_role_policy_for_principal(principal):
     """
