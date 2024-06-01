@@ -5,13 +5,13 @@ from pulumi import Config, Output
 config = Config()
 users_config = config.require_object('users')
 
-SSO_INSTANCE_ARN = aws.ssoadmin.get_instances().arns[0]
-SSO_IDENTITY_STORE_ID = aws.ssoadmin.get_instances().identity_store_ids[0]
-AWS_ACCOUNT_ID = "252705693666"
-
-
 ## getters rq
 
+def get_sso_instance_arn():
+    return aws.ssoadmin.get_instances().arns[0]
+
+def get_sso_identity_store_id():
+    return aws.ssoadmin.get_instances().identity_store_ids[0]
 
 def assume_role_policy_for_principal(principal):
     """
