@@ -21,6 +21,17 @@ def get_sso_identity_store_id():
 def get_aws_account_id():
     return os.getenv('AWS_ACCOUNT_ID')
 
+def get_identity_store_user(user_name: str):
+    return aws.identitystore.get_user(
+        identity_store_id=get_sso_identity_store_id,
+        alternate_identifier=aws.identitystore.GetUserAlternateIdentifierArgs(
+            unique_attribute=aws.identitystore.GetUserAlternateIdentifierUniqueAttributeArgs(
+                attribute_path="UserName",
+                attribute_value=user_name,
+            ),
+        )
+    )
+
 def assume_role_policy_for_principal(principal):
     """
     Returns a well-formed policy document which can be used to control which principals may assume an IAM Role,
