@@ -1,2 +1,26 @@
 config:
   aws:region: us-east-1
+
+  warden:users: 
+    runner:
+      name: "runner_user"
+      group: "runner_group"
+      policies: 
+      - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      - "arn:aws:iam::aws:policy/CloudFrontFullAccess"
+      description: "Role with S3 and Cloufront access for bucket and CDN management"
+    dev: 
+      name: "dev_user"
+      policies: 
+      - "arn:aws:iam::aws:policy/PowerUserAccess"
+      description: "Role for full AWS access, without allowing User and Group management"
+    admin: 
+      name: "admin_user"
+      policies:
+      - "arn:aws:iam::aws:policy/AdministratorAccess"
+      description: "Role for god mode"
+    sys-admin:
+      name: "system_admin"
+      policies:
+      - "arn:aws:iam::aws:policy/job-function/SystemAdministrator" # hey this is kinda cool, IAM readonly, ec2/ecr/lambda admin, and access to cloudtrail/codecommit/sns/sqs
+      description: "Role for development and application operations, with readonly IAM" 

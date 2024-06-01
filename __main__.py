@@ -26,6 +26,10 @@ def assume_role_policy_for_principal(principal):
     })
 
 config = Config()
+users_config = config.require_object('users')
+
+
+
 
 ## create an iam user and role for github runners
 runner_iam_user = aws.iam.User(
@@ -52,7 +56,9 @@ dev_role = aws.iam.Role(
     )
 
 sso = aws.ssoadmin.get_instances()
-example_get_user = aws.identitystore.get_user(identity_store_id=sso.identity_store_ids[0], 
+
+## because im only one person, i only have 1 user that i can log into, because i dont want to create a bunch of fake emails.
+my_user = aws.identitystore.get_user(identity_store_id=sso.identity_store_ids[0], 
     alternate_identifier=aws.identitystore.GetUserAlternateIdentifierArgs(
         unique_attribute=aws.identitystore.GetUserAlternateIdentifierUniqueAttributeArgs(
             attribute_path="UserName",
@@ -72,12 +78,12 @@ dev_group = aws.identitystore.Group(
 runner_user = aws.identitystore.User(
     "runner_user",
     name={
-        "givenName": "Test",
-        "familyName": "User2",
+        "givenName": "Runner",
+        "familyName": "User",
     },
     identity_store_id=sso.identity_store_ids[0], # ouch
     user_name="runner_user",
-    display_name="lmaooo",
+    display_name="Runner User",
 )
 
 runner_group = aws.identitystore.Group(
@@ -91,7 +97,7 @@ runner_group = aws.identitystore.Group(
 dev_group_membership = aws.identitystore.GroupMembership("dev_group_membership",
     group_id=dev_group.group_id,
     identity_store_id=sso.identity_store_ids[0],
-    member_id=example_get_user.user_id,
+    member_id=my_user.user_id,
 )
 
 
@@ -109,7 +115,7 @@ dev_user = aws.identitystore.User(
 # create a permission set
 dev_permission_set = aws.ssoadmin.PermissionSet(
     "dev_permission_set",
-    name="devs-example-set",
+    name="AdministratorAccess",
     instance_arn=sso.arns[0],
     session_duration="PT8H",
     description="A permission set for devs users"
@@ -161,4 +167,4 @@ export('runner_user', runner_user.name)
 # export('runner_roleArn', runner_role.arn)
 export('dev_group_id', dev_group.group_id)
 export('runner_group_id', runner_group.group_id)
-export('myUser', example_get_user.user_name)
+export('myUser', my_user.user_name)
