@@ -55,7 +55,7 @@ def create_identity_store_user(user_name):
     Create an identity store user with the given name.
     """
     return aws.identitystore.User(user_name,
-        identity_store_id=SSO_IDENTITY_STORE_ID,
+        identity_store_id=get_sso_identity_store_id,
         user_name=user_name,
         name={
             "givenName": "John",
@@ -70,7 +70,7 @@ def create_identity_store_group(group_name):
     Create an identity store group with the given name.
     """
     return aws.identitystore.Group(group_name,
-        identity_store_id=SSO_IDENTITY_STORE_ID,
+        identity_store_id=get_sso_identity_store_id,
         group_name=group_name,
         display_name=group_name)
 
