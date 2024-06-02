@@ -23,6 +23,9 @@ def get_aws_account_id():
     return os.getenv('AWS_ACCOUNT_ID')
 
 def get_identity_store_user(user_name: str):
+    """
+    Return the user within the identity store with the given name.
+    """
     return aws.identitystore.get_user(
         identity_store_id=get_sso_identity_store_id,
         alternate_identifier=aws.identitystore.GetUserAlternateIdentifierArgs(
@@ -32,6 +35,25 @@ def get_identity_store_user(user_name: str):
             ),
         )
     )
+
+def get_identity_store_group(group_name: str): #uggghghghghghghghghh
+    """
+    Return the group within the identity store with the given name.
+    """
+    return aws.identitystore.get_group(
+        identity_store_id=get_sso_identity_store_id,
+        alternate_identifier=aws.identitystore.GetGroupAlternateIdentifierArgs(
+            unique_attribute=aws.identitystore.GetGroupAlternateIdentifierUniqueAttributeArgs(
+                attribute_path="DisplayName",
+                attribute_value=group_name,
+            ),
+        )
+    )
+
+def add_user_to_group(user_name: str, group_name: str): #TODO: i just want to add my user to the admin group, but brain mush
+    user = get_identity_store_user(user_name)
+
+    return create_identity_store_group_membership(group_name, user)
 
 def assume_role_policy_for_principal(principal):
     """
@@ -50,32 +72,12 @@ def assume_role_policy_for_principal(principal):
         ]
     })
 
-
-# def create_iam_user(user_name, policies):
-#     """
-#     Create an IAM user with the given name and attach the given policies to it.
-#     """
-#     user = aws.iam.User(user_name, force_destroy=True, name=user_name)
-#     for policy_arn in policies:
-#         aws.iam.UserPolicyAttachment(f"{user_name}-policy-attach",
-#             policy_arn=policy_arn,
-#             user=user.name)
-#     return user
-
-# def create_iam_role(role_name: str, description: str, user_arn: str):
-#     """
-#     Create an IAM role with the given name and description, which can be assumed by the given user.
-#     """
-#     return aws.iam.Role(role_name,
-#         description=description,
-#         assume_role_policy=assume_role_policy_for_principal({'AWS': user_arn}))
-
 def create_identity_store_user(user_name: str):
     """
     Create an identity store user with the given name.
     """
     return aws.identitystore.User(user_name,
-        identity_store_id=get_sso_identity_store_id,
+        identity_store_id=get_sso_identity_store_id(),
         user_name=user_name,
         name={
             "givenName": "John",
@@ -85,23 +87,23 @@ def create_identity_store_user(user_name: str):
 
 
 
-def create_identity_store_group(group_name: str):
+def create_identity_store_group(group_name: str, display_name: str, description: str | None = None):
     """
     Create an identity store group with the given name.
     """
     return aws.identitystore.Group(group_name,
-        identity_store_id=get_sso_identity_store_id,
-        group_name=group_name,
-        display_name=group_name)
+        identity_store_id=get_sso_identity_store_id(),
+        display_name=display_name, 
+        description=description)
 
-def create_identity_store_group_membership(group: str, user: str):
+def create_identity_store_group_membership(group: Group, user: User):
     """
     Add the given user to the given group.
     """
-    return aws.identitystore.GroupMembership(f"{group}-membership",
-        group_id=group.id,
-        identity_store_id=get_sso_identity_store_id,
-        member_id=user.id)
+    return group.display_name.apply(lambda display_name: aws.identitystore.GroupMembership(f"{display_name}_membership",
+        group_id=group.group_id,
+        identity_store_id=get_sso_identity_store_id(),
+        member_id=user.user_id))
 
 def create_permission_set(permission_set_name: str, 
                           session_duration: str = "PT1H" , 
