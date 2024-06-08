@@ -27,7 +27,7 @@ def get_identity_store_user(user_name: str):
     Return the user within the identity store with the given name.
     """
     return aws.identitystore.get_user(
-        identity_store_id=get_sso_identity_store_id,
+        identity_store_id=get_sso_identity_store_id(),
         alternate_identifier=aws.identitystore.GetUserAlternateIdentifierArgs(
             unique_attribute=aws.identitystore.GetUserAlternateIdentifierUniqueAttributeArgs(
                 attribute_path="UserName",
@@ -41,7 +41,7 @@ def get_identity_store_group(group_name: str): #uggghghghghghghghghh
     Return the group within the identity store with the given name.
     """
     return aws.identitystore.get_group(
-        identity_store_id=get_sso_identity_store_id,
+        identity_store_id=get_sso_identity_store_id(),
         alternate_identifier=aws.identitystore.GetGroupAlternateIdentifierArgs(
             unique_attribute=aws.identitystore.GetGroupAlternateIdentifierUniqueAttributeArgs(
                 attribute_path="DisplayName",
@@ -51,9 +51,7 @@ def get_identity_store_group(group_name: str): #uggghghghghghghghghh
     )
 
 def add_user_to_group(user_name: str, group_name: str): #TODO: i just want to add my user to the admin group, but brain mush
-    user = get_identity_store_user(user_name)
-
-    return create_identity_store_group_membership(group_name, user)
+    return create_identity_store_group_membership(group_name, get_identity_store_user(user_name))
 
 def assume_role_policy_for_principal(principal):
     """

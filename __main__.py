@@ -10,7 +10,7 @@ def setup_sso_infrastructure():
     # initialize pulumi config 
     config = Config("warden")
     users_config = config.require_object('users')
-
+    AWS_USER_NAME = os.getenv('AWS_USER_NAME')
     # dictionaries for resources
 
     users = {}
@@ -44,13 +44,16 @@ def setup_sso_infrastructure():
         permission_set = create_permission_set(permission_set_name, "PT1H", description=description)
 
         account_assignment_name = f"{user_name}_account_assignment"
-        account_assignment = create_account_assignment(account_assignment_name, permission_set.arn, user)
+        if account_assignment_name not in account_assignments:
+            account_assignment = create_account_assignment(account_assignment_name, permission_set.arn, user)
 
         account_assignments[user_name] = account_assignment
 
         for policy_arn in policies:
             policy_attachment_name = f"{user_name}_PolicyAttachment_{policy_arn.split('/')[-1]}"
             create_policy_attachment(policy_attachment_name, permission_set.arn, policy_arn, account_assignment)
+    #hacky af, create a membership for my user (hi this is cheating)
+    create_identity_store_group_membership(groups['admin_group'], get_identity_store_user(AWS_USER_NAME))
 
     # Export group names uggggghghhghghghghg
     # group_names = {group_name: group.id for group_name, group in groups.items()}
@@ -60,6 +63,8 @@ def setup_sso_infrastructure():
     # user_names = {user_name: user.id for user_name, user in users.items()}
     # export("userNames", Output.all(user_names))
 
+    
+    
 
 if __name__ == "__main__":
     setup_sso_infrastructure()
